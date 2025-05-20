@@ -1,0 +1,45 @@
+name: build
+
+on:
+  merge_group:
+  pull_request:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-24.04
+    steps:
+
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: build
+        run: |
+          podman run \
+            --entrypoint /workspace/build.sh \
+            --network host \
+            --rm \
+            --tmpfs /tmp:exec \
+            --volume $PWD:/workspace \
+            --workdir /workspace \
+            ghcr.io/openai/codex-universal
+
+      - name: upload-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          path: ghc.tar.xz
+
+      - name: test
+        run: |
+          podman run \
+            --entrypoint /workspace/test.sh \
+            --network host \
+            --rm \
+            --tmpfs /tmp:exec \
+            --volume $PWD:/workspace \
+            --workdir /workspace \
+            ghcr.io/openai/codex-universal
